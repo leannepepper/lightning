@@ -38,46 +38,52 @@ scene.add(pointLight)
 const material = new THREE.MeshStandardMaterial()
 material.roughness = 0.4
 
-// MeshLine
-
-const branchPoint = 35
-const mainStrikePoints = []
-const branchStrikePoints = []
-for (let j = 0; j < 50; j++) {
-  // use Noise to create a jagged line
-  const noiseDelta = noise.noise3D(0, j * 0.3, 0) * 0.05
-  mainStrikePoints.push(noiseDelta, j * 0.05, 0)
-
-  if (j === branchPoint) {
-    for (let k = 0; k < 15; k++) {
-      const branchStart = j * 0.05
-      const noiseBranchDelta = Math.abs(noise.noise3D(k, k * 0.01, 0) * 1.5)
-      branchStrikePoints.push(
-        (k + noiseBranchDelta) * 0.05,
-        branchStart + (branchStart - k * 5.0) * 0.01,
-        0
-      )
-    }
-  }
-}
-
-const line = new MeshLine()
-line.setPoints(mainStrikePoints, p => 0.05)
-
-const branch = new MeshLine()
-branch.setPoints(branchStrikePoints, p => 0.01)
-
 const meshlineMaterial = new MeshLineMaterial({
   color: new THREE.Color('#fcfbfb')
 })
 
-const mainStrikeMesh = new THREE.Mesh(line, meshlineMaterial)
-const branchStrikeMesh = new THREE.Mesh(branch, meshlineMaterial)
+// MeshLine
+
+function createMainStrike () {
+  const array = []
+  for (let j = 0; j < 50; j++) {
+    // use Noise to create a jagged line
+    const noiseDelta = noise.noise3D(0, j * 0.3, 0) * 0.05
+    array.push(noiseDelta, j * 0.05, 0)
+  }
+
+  const line = new MeshLine()
+  line.setPoints(array, p => 0.05)
+  const mainStrikeMesh = new THREE.Mesh(line, meshlineMaterial)
+  scene.add(mainStrikeMesh)
+}
+
+function createBranch (startPoint) {
+  const array = []
+
+  for (let k = 0; k < 15; k++) {
+    const branchStart = startPoint * 0.05
+    const noiseBranchDelta = noise.noise3D(k, k * 0.01, 0) * 1.5
+    array.push(
+      (k + noiseBranchDelta) * 0.05,
+      branchStart + (branchStart - k * 5.0) * 0.01,
+      0
+    )
+  }
+  const branch = new MeshLine()
+  branch.setPoints(array, p => 0.01)
+  const branchStrikeMesh = new THREE.Mesh(branch, meshlineMaterial)
+  scene.add(branchStrikeMesh)
+}
+
+createMainStrike()
+createBranch(35)
+createBranch(10)
 
 const plane = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), material)
 plane.rotation.x = -Math.PI * 0.5
 
-scene.add(mainStrikeMesh, branchStrikeMesh, plane)
+scene.add(plane)
 
 /**
  * Sizes
