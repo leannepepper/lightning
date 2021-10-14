@@ -67,79 +67,79 @@ const waterMaterial = new THREE.ShaderMaterial({
   }
 })
 
-gui
-  .add(waterMaterial.uniforms.uBigWavesElevation, 'value')
-  .min(0)
-  .max(1)
-  .step(0.001)
-  .name('uBigWavesElevation')
-gui
-  .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'x')
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name('uBigWavesFrequencyX')
-gui
-  .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'y')
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name('uBigWavesFrequencyY')
-gui
-  .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'x')
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name('uBigWaveSpeedX')
-gui
-  .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'y')
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name('uBigWaveSpeedY')
+// gui
+//   .add(waterMaterial.uniforms.uBigWavesElevation, 'value')
+//   .min(0)
+//   .max(1)
+//   .step(0.001)
+//   .name('uBigWavesElevation')
+// gui
+//   .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'x')
+//   .min(0)
+//   .max(10)
+//   .step(0.001)
+//   .name('uBigWavesFrequencyX')
+// gui
+//   .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'y')
+//   .min(0)
+//   .max(10)
+//   .step(0.001)
+//   .name('uBigWavesFrequencyY')
+// gui
+//   .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'x')
+//   .min(0)
+//   .max(10)
+//   .step(0.001)
+//   .name('uBigWaveSpeedX')
+// gui
+//   .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'y')
+//   .min(0)
+//   .max(10)
+//   .step(0.001)
+//   .name('uBigWaveSpeedY')
 
-gui.addColor(debugObject, 'depthColor').onChange(() => {
-  waterMaterial.uniforms.uDepthColor.value.set(debugObject.depthColor)
-})
-gui.addColor(debugObject, 'surfaceColor').onChange(() => {
-  waterMaterial.uniforms.uSurfaceColor.value.set(debugObject.surfaceColor)
-})
-gui
-  .add(waterMaterial.uniforms.uColorOffset, 'value')
-  .min(0)
-  .max(1)
-  .step(0.001)
-  .name('uColorOffset')
-gui
-  .add(waterMaterial.uniforms.uColorMultiplier, 'value')
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name('uColorMultiplier')
-gui
-  .add(waterMaterial.uniforms.uSmallWavesElevation, 'value')
-  .min(0)
-  .max(1)
-  .step(0.001)
-  .name('uSmallWavesElevation')
-gui
-  .add(waterMaterial.uniforms.uSmallWavesFrequency, 'value')
-  .min(0)
-  .max(30)
-  .step(0.001)
-  .name('uSmallWavesFrequency')
-gui
-  .add(waterMaterial.uniforms.uSmallWavesSpeed, 'value')
-  .min(0)
-  .max(4)
-  .step(0.001)
-  .name('uSmallWavesSpeed')
-gui
-  .add(waterMaterial.uniforms.uSmallIterations, 'value')
-  .min(0)
-  .max(5)
-  .step(1)
-  .name('uSmallIterations')
+// gui.addColor(debugObject, 'depthColor').onChange(() => {
+//   waterMaterial.uniforms.uDepthColor.value.set(debugObject.depthColor)
+// })
+// gui.addColor(debugObject, 'surfaceColor').onChange(() => {
+//   waterMaterial.uniforms.uSurfaceColor.value.set(debugObject.surfaceColor)
+// })
+// gui
+//   .add(waterMaterial.uniforms.uColorOffset, 'value')
+//   .min(0)
+//   .max(1)
+//   .step(0.001)
+//   .name('uColorOffset')
+// gui
+//   .add(waterMaterial.uniforms.uColorMultiplier, 'value')
+//   .min(0)
+//   .max(10)
+//   .step(0.001)
+//   .name('uColorMultiplier')
+// gui
+//   .add(waterMaterial.uniforms.uSmallWavesElevation, 'value')
+//   .min(0)
+//   .max(1)
+//   .step(0.001)
+//   .name('uSmallWavesElevation')
+// gui
+//   .add(waterMaterial.uniforms.uSmallWavesFrequency, 'value')
+//   .min(0)
+//   .max(30)
+//   .step(0.001)
+//   .name('uSmallWavesFrequency')
+// gui
+//   .add(waterMaterial.uniforms.uSmallWavesSpeed, 'value')
+//   .min(0)
+//   .max(4)
+//   .step(0.001)
+//   .name('uSmallWavesSpeed')
+// gui
+//   .add(waterMaterial.uniforms.uSmallIterations, 'value')
+//   .min(0)
+//   .max(5)
+//   .step(1)
+//   .name('uSmallIterations')
 
 const meshlineMaterial = new MeshLineMaterial({
   color: new THREE.Color('#fcfbfb')
@@ -148,23 +148,16 @@ const meshlineMaterial = new MeshLineMaterial({
 // MeshLine
 
 let mainStrikeMesh
-const NUM_POINTS = 50
+const NUM_POINTS = 30
+let points = [] //new Float32Array(NUM_POINTS * 3)
+const geometry = new THREE.BufferGeometry()
 
 function createMainStrike () {
-  const geometry = new THREE.BufferGeometry()
-  let points = new Float32Array(NUM_POINTS * 3)
+  const noiseDelta = noise.noise3D(0, 30 * 0.3, 0) * 0.05
 
-  for (let i = 0; i < NUM_POINTS; i++) {
-    const i3 = i * 3
-    // use Noise to create a jagged line
-    const noiseDelta = noise.noise3D(0, i * 0.3, 0) * 0.05
+  points.push(new THREE.Vector3(noiseDelta, 30 * 0.03, 0))
+  geometry.setFromPoints(points)
 
-    points[i3] = noiseDelta
-    points[i3 + 1] = i * 0.05
-    points[i3 + 2] = 0
-  }
-
-  geometry.setAttribute('position', new THREE.BufferAttribute(points, 3))
   const lineMaterial = new THREE.LineBasicMaterial({
     color: '#fcfbfb',
     linewidth: 10
@@ -177,11 +170,11 @@ function createBranch (startPoint, horizontalSpread) {
   const array = []
 
   for (let k = 0; k < 15; k++) {
-    const branchStart = startPoint * 0.05
-    const noiseBranchDelta = noise.noise3D(k, k * 0.01, 0) * 1.5
+    const branchStart = startPoint * 0.03
+    const noiseBranchDelta = noise.noise3D(k, k * 0.01, 0) * 2.0
     array.push(
-      (k + noiseBranchDelta) * horizontalSpread,
-      branchStart + (branchStart - k * 5.0) * 0.01,
+      (k * 0.5 + noiseBranchDelta) * horizontalSpread,
+      branchStart + (branchStart - k * 2.0) * 0.01,
       0
     )
   }
@@ -231,7 +224,7 @@ const camera = new THREE.PerspectiveCamera(
 )
 camera.position.x = 0
 camera.position.y = 1
-camera.position.z = 5
+camera.position.z = 2
 scene.add(camera)
 
 // Controls
@@ -271,13 +264,14 @@ const lightningStikePass = new BloomPass(
 // Create Scene
 createMainStrike()
 
-createBranch(35, 0.05)
-createBranch(10, -0.06)
+// createBranch(20, 0.05)
+// createBranch(10, -0.06)
 
 /**
  * Animate
  */
 const clock = new THREE.Clock()
+let i = 29
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime()
@@ -287,12 +281,27 @@ const tick = () => {
 
   waterMaterial.uniforms.uTime.value = elapsedTime
 
+  // Animate Lightning
+  if (i <= 0) {
+    // console.log('STOP')
+    // points = new Float32Array(NUM_POINTS * 3)
+    // mainStrikeMesh.geometry.attributes.position.needsUpdate = true
+    // i = 30
+  } else {
+    const noiseDelta = noise.noise3D(0, i * 0.3, 0) * 0.05
+
+    points.push(new THREE.Vector3(noiseDelta, i * 0.03, 0))
+
+    geometry.setFromPoints(points)
+  }
+
   // Render
   //renderer.render(scene, camera)
   effectComposer.render()
 
   // Call tick again on the next frame
   window.requestAnimationFrame(tick)
+  i--
 }
 
 tick()
