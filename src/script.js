@@ -2,12 +2,11 @@ import * as THREE from 'three'
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
-import { MeshLine, MeshLineMaterial } from '../node_modules/meshline'
+import { LightningStrike } from 'three/examples/jsm/geometries/LightningStrike.js'
 import SimplexNoise from 'simplex-noise'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass'
-import { BloomPass } from 'three/examples/jsm/postprocessing/BloomPass.js'
 import waterVertexShader from './shaders/vertex.glsl'
 import waterFragmentShader from './shaders/fragment.glsl'
 
@@ -21,11 +20,34 @@ const gui = new dat.GUI()
 const debugObject = {}
 const noise = new SimplexNoise('seed')
 
+/**
+ * Sizes
+ */
+const sizes = {
+  width: window.innerWidth,
+  height: window.innerHeight
+}
+
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 
 // Scene
 const scene = new THREE.Scene()
+
+/**
+ * Camera
+ */
+// Base camera
+const camera = new THREE.PerspectiveCamera(
+  75,
+  sizes.width / sizes.height,
+  0.1,
+  100
+)
+camera.position.x = 5
+camera.position.y = 0
+camera.position.z = 0
+scene.add(camera)
 
 /**
  * Lights
@@ -141,47 +163,67 @@ const waterMaterial = new THREE.ShaderMaterial({
 //   .step(1)
 //   .name('uSmallIterations')
 
-const meshlineMaterial = new MeshLineMaterial({
-  color: new THREE.Color('#fcfbfb')
-})
+const rayParams = {
+  sourceOffset: new THREE.Vector3(0, 2, 0),
+  destOffset: new THREE.Vector3(0, 0, 0),
+  radius0: 0.05,
+  radius1: 0.05,
+  minRadius: 0.5,
+  maxIterations: 7,
+  isEternal: true,
 
-// MeshLine
+  timeScale: 0.7,
 
-let mainStrikeMesh
+  propagationTimeFactor: 0.05,
+  vanishingTimeFactor: 0.95,
+  subrayPeriod: 3.5,
+  subrayDutyCycle: 0.6,
+  maxSubrayRecursion: 3,
+  ramification: 7,
+  recursionProbability: 0.6,
+
+  roughness: 0.85,
+  straightness: 0.6
+}
+
+let lightningStrike // Geometry
+let lightningStrikeMesh
+const outlineMeshArray = []
+
 const NUM_POINTS = 30
-let points = [] //new Float32Array(NUM_POINTS * 3)
-const geometry = new THREE.BufferGeometry()
+let points = []
+//new Float32Array(NUM_POINTS * 3)
+//const geometry = new THREE.BufferGeometry()
 
 function createMainStrike () {
+  if (lightningStrikeMesh) {
+    scene.remove(lightningStrikeMesh)
+  }
+
   const noiseDelta = noise.noise3D(0, 30 * 0.3, 0) * 0.05
 
   points.push(new THREE.Vector3(noiseDelta, 30 * 0.03, 0))
-  geometry.setFromPoints(points)
+  // geometry.setFromPoints(points)
 
-  const lineMaterial = new THREE.LineBasicMaterial({
-    color: '#fcfbfb',
-    linewidth: 10
+  const lightningMaterial = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(0xb0ffff)
   })
-  mainStrikeMesh = new THREE.Line(geometry, lineMaterial)
-  scene.add(mainStrikeMesh)
-}
 
-function createBranch (startPoint, horizontalSpread) {
-  const array = []
+  lightningStrike = new LightningStrike(rayParams)
+  lightningStrikeMesh = new THREE.Mesh(lightningStrike, lightningMaterial)
 
-  for (let k = 0; k < 15; k++) {
-    const branchStart = startPoint * 0.03
-    const noiseBranchDelta = noise.noise3D(k, k * 0.01, 0) * 2.0
-    array.push(
-      (k * 0.5 + noiseBranchDelta) * horizontalSpread,
-      branchStart + (branchStart - k * 2.0) * 0.01,
-      0
-    )
-  }
-  const branch = new MeshLine()
-  branch.setPoints(array, p => 0.01)
-  const branchStrikeMesh = new THREE.Mesh(branch, meshlineMaterial)
-  scene.add(branchStrikeMesh)
+  outlineMeshArray.length = 0
+  outlineMeshArray.push(lightningStrikeMesh)
+
+  scene.add(lightningStrikeMesh)
+
+  // mainStrikeMesh = new THREE.Mesh(geometry, lineMaterial)
+  // scene.add(mainStrikeMesh)
+  // lightningStikePass.selectedObjects = [mainStrikeMesh]
+
+  effectComposer.passes = []
+  effectComposer.addPass(new RenderPass(scene, camera))
+  createOutline(scene, outlineMeshArray, new THREE.Color(0xff0000))
 }
 
 const waterGeometry = new THREE.PlaneGeometry(2, 2, 512, 512)
@@ -189,14 +231,6 @@ const plane = new THREE.Mesh(waterGeometry, waterMaterial)
 plane.rotation.x = -Math.PI * 0.5
 
 scene.add(plane)
-
-/**
- * Sizes
- */
-const sizes = {
-  width: window.innerWidth,
-  height: window.innerHeight
-}
 
 window.addEventListener('resize', () => {
   // Update sizes
@@ -212,21 +246,6 @@ window.addEventListener('resize', () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 })
 
-/**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(
-  75,
-  sizes.width / sizes.height,
-  0.1,
-  100
-)
-camera.position.x = 0
-camera.position.y = 1
-camera.position.z = 2
-scene.add(camera)
-
 // Controls
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
@@ -239,33 +258,35 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.outputEncoding = THREE.sRGBEncoding
 
 /**
  * Post Processing
  */
-
-// TODO: figure out how to do the post processing for a bloom on the lightning strike
 const effectComposer = new EffectComposer(renderer)
 effectComposer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 effectComposer.setSize(sizes.width, sizes.height)
 
-const renderPass = new RenderPass(scene, camera)
-effectComposer.addPass(renderPass)
+function createOutline (scene, objectsArray, visibleColor) {
+  const outlinePass = new OutlinePass(
+    new THREE.Vector2(sizes.width, sizes.height),
+    scene,
+    camera,
+    objectsArray
+  )
+  outlinePass.edgeStrength = 2.5
+  outlinePass.edgeGlow = 0.7
+  outlinePass.edgeThickness = 2.8
+  outlinePass.visibleEdgeColor = visibleColor
+  outlinePass.hiddenEdgeColor.set(0)
+  effectComposer.addPass(outlinePass)
 
-const lightningStikePass = new BloomPass(
-  1, // strength
-  25, // kernel size
-  4, // sigma ?
-  256 // blur render target resolution
-)
-// lightningStikePass.renderToScreen = true
-// effectComposer.addPass(lightningStikePass)
+  //  scene.userData.outlineEnabled = true
 
-// Create Scene
+  return outlinePass
+}
+
 createMainStrike()
-
-// createBranch(20, 0.05)
-// createBranch(10, -0.06)
 
 /**
  * Animate
@@ -284,15 +305,11 @@ const tick = () => {
   // Animate Lightning
   if (i <= 0) {
     // console.log('STOP')
-    // points = new Float32Array(NUM_POINTS * 3)
-    // mainStrikeMesh.geometry.attributes.position.needsUpdate = true
-    // i = 30
   } else {
     const noiseDelta = noise.noise3D(0, i * 0.3, 0) * 0.05
-
     points.push(new THREE.Vector3(noiseDelta, i * 0.03, 0))
 
-    geometry.setFromPoints(points)
+    // geometry.setFromPoints(points)
   }
 
   // Render
