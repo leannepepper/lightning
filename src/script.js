@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
 import { LightningStrike } from 'three/examples/jsm/geometries/LightningStrike.js'
+import { LightningStorm } from 'three/examples/jsm/objects/LightningStorm'
 import SimplexNoise from 'simplex-noise'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
@@ -44,8 +45,8 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 )
-camera.position.x = 5
-camera.position.y = 0
+camera.position.x = 3
+camera.position.y = 1
 camera.position.z = 0
 scene.add(camera)
 
@@ -58,7 +59,7 @@ scene.add(ambientLight)
 const pointLight = new THREE.PointLight(0xffffff, 0.5)
 pointLight.position.x = 2
 pointLight.position.y = 3
-pointLight.position.z = 4
+pointLight.position.z = 2
 scene.add(pointLight)
 
 /**
@@ -69,7 +70,7 @@ scene.add(pointLight)
 debugObject.depthColor = '#11476b'
 debugObject.surfaceColor = '#9bd8ff'
 
-// Material
+// Materials
 const waterMaterial = new THREE.ShaderMaterial({
   vertexShader: waterVertexShader,
   fragmentShader: waterFragmentShader,
@@ -87,6 +88,10 @@ const waterMaterial = new THREE.ShaderMaterial({
     uSmallWavesSpeed: { value: 0.2 },
     uSmallIterations: { value: 4 }
   }
+})
+
+const lightningMaterial = new THREE.MeshBasicMaterial({
+  color: new THREE.Color(0xb0ffff)
 })
 
 // gui
@@ -163,70 +168,129 @@ const waterMaterial = new THREE.ShaderMaterial({
 //   .step(1)
 //   .name('uSmallIterations')
 
+// const rayParams = {
+//   sourceOffset: new THREE.Vector3(0, 2, 0),
+//   destOffset: new THREE.Vector3(0, 0, 0),
+//   radius0: 0.01,
+//   radius1: 0.005,
+//   minRadius: 0.5,
+//   maxIterations: 7,
+//   isEternal: true,
+
+//   timeScale: 0.7,
+
+//   propagationTimeFactor: 0.05,
+//   vanishingTimeFactor: 0.95,
+//   subrayPeriod: 3.5,
+//   subrayDutyCycle: 0.6,
+//   maxSubrayRecursion: 3,
+//   ramification: 7,
+//   recursionProbability: 0.6,
+
+//   roughness: 0.85,
+//   straightness: 0.6
+// }
+const rayDirection = new THREE.Vector3(0, -1, 0)
+let rayLength = 0
+const vec1 = new THREE.Vector3()
+const vec2 = new THREE.Vector3()
+
 const rayParams = {
-  sourceOffset: new THREE.Vector3(0, 2, 0),
-  destOffset: new THREE.Vector3(0, 0, 0),
-  radius0: 0.05,
-  radius1: 0.05,
-  minRadius: 0.5,
+  radius0: 0.01,
+  radius1: 0.005,
+  minRadius: 0.05,
   maxIterations: 7,
-  isEternal: true,
 
-  timeScale: 0.7,
-
-  propagationTimeFactor: 0.05,
-  vanishingTimeFactor: 0.95,
-  subrayPeriod: 3.5,
+  timeScale: 1.15,
+  propagationTimeFactor: 0.2,
+  vanishingTimeFactor: 0.9,
+  subrayPeriod: 4,
   subrayDutyCycle: 0.6,
+
   maxSubrayRecursion: 3,
-  ramification: 7,
-  recursionProbability: 0.6,
+  ramification: 3,
+  recursionProbability: 0.4,
 
   roughness: 0.85,
-  straightness: 0.6
+  straightness: 0.65,
+
+  onSubrayCreation: function (
+    segment,
+    parentSubray,
+    childSubray,
+    lightningStrike
+  ) {
+    lightningStrike.subrayConePosition(
+      segment,
+      parentSubray,
+      childSubray,
+      0.6,
+      0.6,
+      0.5
+    )
+
+    // Plane projection
+
+    rayLength = lightningStrike.rayParameters.sourceOffset.y
+    vec1.subVectors(
+      childSubray.pos1,
+      lightningStrike.rayParameters.sourceOffset
+    )
+    const proj = rayDirection.dot(vec1)
+    vec2.copy(rayDirection).multiplyScalar(proj)
+    vec1.sub(vec2)
+    const scale = proj / rayLength > 0.5 ? rayLength / proj : 1
+    vec2.multiplyScalar(scale)
+    vec1.add(vec2)
+    childSubray.pos1.addVectors(
+      vec1,
+      lightningStrike.rayParameters.sourceOffset
+    )
+  }
 }
 
-let lightningStrike // Geometry
-let lightningStrikeMesh
-const outlineMeshArray = []
+const stormParams = {
+  size: 20,
+  minHeight: 9,
+  maxHeight: 20,
+  maxSlope: 0.6,
+  maxLightnings: 8,
+  lightningParameters: rayParams,
+  lightningMaterial: lightningMaterial
+}
 
-const NUM_POINTS = 30
-let points = []
-//new Float32Array(NUM_POINTS * 3)
-//const geometry = new THREE.BufferGeometry()
+// let lightningStrike // Geometry
+// let lightningStrikeMesh
+// const outlineMeshArray = []
 
-function createMainStrike () {
-  if (lightningStrikeMesh) {
-    scene.remove(lightningStrikeMesh)
-  }
+// function createMainStrike () {
+//   if (lightningStrikeMesh) {
+//     scene.remove(lightningStrikeMesh)
+//   }
 
-  const noiseDelta = noise.noise3D(0, 30 * 0.3, 0) * 0.05
+//   lightningStrike = new LightningStrike(rayParams)
+//   lightningStrikeMesh = new THREE.Mesh(lightningStrike, lightningMaterial)
 
-  points.push(new THREE.Vector3(noiseDelta, 30 * 0.03, 0))
-  // geometry.setFromPoints(points)
+//   outlineMeshArray.length = 0
+//   outlineMeshArray.push(lightningStrikeMesh)
 
-  const lightningMaterial = new THREE.MeshBasicMaterial({
-    color: new THREE.Color(0xb0ffff)
-  })
+//   scene.add(lightningStrikeMesh)
 
-  lightningStrike = new LightningStrike(rayParams)
-  lightningStrikeMesh = new THREE.Mesh(lightningStrike, lightningMaterial)
+//   effectComposer.passes = []
+//   effectComposer.addPass(new RenderPass(scene, camera))
+//   createOutline(scene, outlineMeshArray, new THREE.Color(0xb0ffff))
+// }
 
-  outlineMeshArray.length = 0
-  outlineMeshArray.push(lightningStrikeMesh)
-
-  scene.add(lightningStrikeMesh)
-
-  // mainStrikeMesh = new THREE.Mesh(geometry, lineMaterial)
-  // scene.add(mainStrikeMesh)
-  // lightningStikePass.selectedObjects = [mainStrikeMesh]
+const storm = new LightningStorm({ stormParams })
+function createStorm () {
+  scene.add(storm)
 
   effectComposer.passes = []
   effectComposer.addPass(new RenderPass(scene, camera))
-  createOutline(scene, outlineMeshArray, new THREE.Color(0xff0000))
+  createOutline(scene, storm.lightningsMeshes, new THREE.Color(0xb0ffff))
 }
 
-const waterGeometry = new THREE.PlaneGeometry(2, 2, 512, 512)
+const waterGeometry = new THREE.PlaneGeometry(20, 20, 512, 512)
 const plane = new THREE.Mesh(waterGeometry, waterMaterial)
 plane.rotation.x = -Math.PI * 0.5
 
@@ -285,14 +349,15 @@ function createOutline (scene, objectsArray, visibleColor) {
 
   return outlinePass
 }
+camera.position.set(0, 0.2, 1.6).multiplyScalar(20 * 0.5)
 
-createMainStrike()
+createStorm()
 
 /**
  * Animate
  */
 const clock = new THREE.Clock()
-let i = 29
+let i = 0
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime()
@@ -301,15 +366,11 @@ const tick = () => {
   controls.update()
 
   waterMaterial.uniforms.uTime.value = elapsedTime
+  storm.update(elapsedTime)
 
   // Animate Lightning
-  if (i <= 0) {
-    // console.log('STOP')
-  } else {
-    const noiseDelta = noise.noise3D(0, i * 0.3, 0) * 0.05
-    points.push(new THREE.Vector3(noiseDelta, i * 0.03, 0))
-
-    // geometry.setFromPoints(points)
+  if (i % 100 === 0) {
+    // createMainStrike()
   }
 
   // Render
@@ -318,7 +379,7 @@ const tick = () => {
 
   // Call tick again on the next frame
   window.requestAnimationFrame(tick)
-  i--
+  i++
 }
 
 tick()
