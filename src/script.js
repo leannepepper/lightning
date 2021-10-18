@@ -39,15 +39,22 @@ const scene = new THREE.Scene()
  * Camera
  */
 // Base camera
+// const camera = new THREE.PerspectiveCamera(
+//   75,
+//   sizes.width / sizes.height,
+//   0.1,
+//   100
+// )
+// camera.position.x = 3
+// camera.position.y = 1
+// camera.position.z = 0
 const camera = new THREE.PerspectiveCamera(
-  75,
-  sizes.width / sizes.height,
-  0.1,
-  100
+  27,
+  window.innerWidth / window.innerHeight,
+  20,
+  10000
 )
-camera.position.x = 3
-camera.position.y = 1
-camera.position.z = 0
+
 scene.add(camera)
 
 /**
@@ -168,40 +175,18 @@ const lightningMaterial = new THREE.MeshBasicMaterial({
 //   .step(1)
 //   .name('uSmallIterations')
 
-// const rayParams = {
-//   sourceOffset: new THREE.Vector3(0, 2, 0),
-//   destOffset: new THREE.Vector3(0, 0, 0),
-//   radius0: 0.01,
-//   radius1: 0.005,
-//   minRadius: 0.5,
-//   maxIterations: 7,
-//   isEternal: true,
-
-//   timeScale: 0.7,
-
-//   propagationTimeFactor: 0.05,
-//   vanishingTimeFactor: 0.95,
-//   subrayPeriod: 3.5,
-//   subrayDutyCycle: 0.6,
-//   maxSubrayRecursion: 3,
-//   ramification: 7,
-//   recursionProbability: 0.6,
-
-//   roughness: 0.85,
-//   straightness: 0.6
-// }
 const rayDirection = new THREE.Vector3(0, -1, 0)
 let rayLength = 0
 const vec1 = new THREE.Vector3()
 const vec2 = new THREE.Vector3()
 
 const rayParams = {
-  radius0: 0.01,
-  radius1: 0.005,
-  minRadius: 0.05,
+  radius0: 0.1,
+  radius1: 0.05,
+  minRadius: 0.3,
   maxIterations: 7,
 
-  timeScale: 1.15,
+  timeScale: 0.15,
   propagationTimeFactor: 0.2,
   vanishingTimeFactor: 0.9,
   subrayPeriod: 4,
@@ -213,7 +198,8 @@ const rayParams = {
 
   roughness: 0.85,
   straightness: 0.65,
-
+  sourceOffset: new THREE.Vector3(0, 2, 0),
+  destOffset: new THREE.Vector3(-1, 2, 0),
   onSubrayCreation: function (
     segment,
     parentSubray,
@@ -248,40 +234,27 @@ const rayParams = {
     )
   }
 }
+const GROUND_SIZE = 20
 
-const stormParams = {
-  size: 20,
+// Ground
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, 512, 512),
+  waterMaterial
+)
+ground.rotation.x = -Math.PI * 0.5
+scene.add(ground)
+
+const storm = new LightningStorm({
+  size: 0.1,
   minHeight: 9,
   maxHeight: 20,
   maxSlope: 0.6,
   maxLightnings: 8,
   lightningParameters: rayParams,
   lightningMaterial: lightningMaterial
-}
+})
 
-// let lightningStrike // Geometry
-// let lightningStrikeMesh
-// const outlineMeshArray = []
-
-// function createMainStrike () {
-//   if (lightningStrikeMesh) {
-//     scene.remove(lightningStrikeMesh)
-//   }
-
-//   lightningStrike = new LightningStrike(rayParams)
-//   lightningStrikeMesh = new THREE.Mesh(lightningStrike, lightningMaterial)
-
-//   outlineMeshArray.length = 0
-//   outlineMeshArray.push(lightningStrikeMesh)
-
-//   scene.add(lightningStrikeMesh)
-
-//   effectComposer.passes = []
-//   effectComposer.addPass(new RenderPass(scene, camera))
-//   createOutline(scene, outlineMeshArray, new THREE.Color(0xb0ffff))
-// }
-
-const storm = new LightningStorm({ stormParams })
 function createStorm () {
   scene.add(storm)
 
@@ -290,11 +263,11 @@ function createStorm () {
   createOutline(scene, storm.lightningsMeshes, new THREE.Color(0xb0ffff))
 }
 
-const waterGeometry = new THREE.PlaneGeometry(20, 20, 512, 512)
-const plane = new THREE.Mesh(waterGeometry, waterMaterial)
-plane.rotation.x = -Math.PI * 0.5
+// const waterGeometry = new THREE.PlaneGeometry(20, 20, 512, 512)
+// const plane = new THREE.Mesh(waterGeometry, waterMaterial)
+// plane.rotation.x = -Math.PI * 0.5
 
-scene.add(plane)
+//scene.add(plane)
 
 window.addEventListener('resize', () => {
   // Update sizes
@@ -349,7 +322,7 @@ function createOutline (scene, objectsArray, visibleColor) {
 
   return outlinePass
 }
-camera.position.set(0, 0.2, 1.6).multiplyScalar(20 * 0.5)
+camera.position.set(0, 1.2, 3.6).multiplyScalar(GROUND_SIZE * 0.5)
 
 createStorm()
 
