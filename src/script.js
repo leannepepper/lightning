@@ -82,16 +82,16 @@ const waterMaterial = new THREE.ShaderMaterial({
   vertexShader: waterVertexShader,
   fragmentShader: waterFragmentShader,
   uniforms: {
-    uBigWavesElevation: { value: 0.2 },
-    uBigWavesFrequency: { value: new THREE.Vector2(4, 1.5) },
+    uBigWavesElevation: { value: 0.128 },
+    uBigWavesFrequency: { value: new THREE.Vector2(1.389, 0.413) },
     uTime: { value: 0 },
     uBigWaveSpeed: { value: new THREE.Vector2(0.75, 0.5) },
     uDepthColor: { value: new THREE.Color(debugObject.depthColor) },
     uSurfaceColor: { value: new THREE.Color(debugObject.surfaceColor) },
-    uColorOffset: { value: 0.215 },
+    uColorOffset: { value: 0.22 },
     uColorMultiplier: { value: 2.256 },
-    uSmallWavesElevation: { value: 0.15 },
-    uSmallWavesFrequency: { value: 3 },
+    uSmallWavesElevation: { value: 0.507 },
+    uSmallWavesFrequency: { value: 0.264 },
     uSmallWavesSpeed: { value: 0.2 },
     uSmallIterations: { value: 4 }
   }
@@ -101,79 +101,79 @@ const lightningMaterial = new THREE.MeshBasicMaterial({
   color: new THREE.Color(0xb0ffff)
 })
 
-// gui
-//   .add(waterMaterial.uniforms.uBigWavesElevation, 'value')
-//   .min(0)
-//   .max(1)
-//   .step(0.001)
-//   .name('uBigWavesElevation')
-// gui
-//   .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'x')
-//   .min(0)
-//   .max(10)
-//   .step(0.001)
-//   .name('uBigWavesFrequencyX')
-// gui
-//   .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'y')
-//   .min(0)
-//   .max(10)
-//   .step(0.001)
-//   .name('uBigWavesFrequencyY')
-// gui
-//   .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'x')
-//   .min(0)
-//   .max(10)
-//   .step(0.001)
-//   .name('uBigWaveSpeedX')
-// gui
-//   .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'y')
-//   .min(0)
-//   .max(10)
-//   .step(0.001)
-//   .name('uBigWaveSpeedY')
+gui
+  .add(waterMaterial.uniforms.uBigWavesElevation, 'value')
+  .min(0)
+  .max(1)
+  .step(0.001)
+  .name('uBigWavesElevation')
+gui
+  .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'x')
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .name('uBigWavesFrequencyX')
+gui
+  .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'y')
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .name('uBigWavesFrequencyY')
+gui
+  .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'x')
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .name('uBigWaveSpeedX')
+gui
+  .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'y')
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .name('uBigWaveSpeedY')
 
-// gui.addColor(debugObject, 'depthColor').onChange(() => {
-//   waterMaterial.uniforms.uDepthColor.value.set(debugObject.depthColor)
-// })
-// gui.addColor(debugObject, 'surfaceColor').onChange(() => {
-//   waterMaterial.uniforms.uSurfaceColor.value.set(debugObject.surfaceColor)
-// })
-// gui
-//   .add(waterMaterial.uniforms.uColorOffset, 'value')
-//   .min(0)
-//   .max(1)
-//   .step(0.001)
-//   .name('uColorOffset')
-// gui
-//   .add(waterMaterial.uniforms.uColorMultiplier, 'value')
-//   .min(0)
-//   .max(10)
-//   .step(0.001)
-//   .name('uColorMultiplier')
-// gui
-//   .add(waterMaterial.uniforms.uSmallWavesElevation, 'value')
-//   .min(0)
-//   .max(1)
-//   .step(0.001)
-//   .name('uSmallWavesElevation')
-// gui
-//   .add(waterMaterial.uniforms.uSmallWavesFrequency, 'value')
-//   .min(0)
-//   .max(30)
-//   .step(0.001)
-//   .name('uSmallWavesFrequency')
-// gui
-//   .add(waterMaterial.uniforms.uSmallWavesSpeed, 'value')
-//   .min(0)
-//   .max(4)
-//   .step(0.001)
-//   .name('uSmallWavesSpeed')
-// gui
-//   .add(waterMaterial.uniforms.uSmallIterations, 'value')
-//   .min(0)
-//   .max(5)
-//   .step(1)
-//   .name('uSmallIterations')
+gui.addColor(debugObject, 'depthColor').onChange(() => {
+  waterMaterial.uniforms.uDepthColor.value.set(debugObject.depthColor)
+})
+gui.addColor(debugObject, 'surfaceColor').onChange(() => {
+  waterMaterial.uniforms.uSurfaceColor.value.set(debugObject.surfaceColor)
+})
+gui
+  .add(waterMaterial.uniforms.uColorOffset, 'value')
+  .min(0)
+  .max(1)
+  .step(0.001)
+  .name('uColorOffset')
+gui
+  .add(waterMaterial.uniforms.uColorMultiplier, 'value')
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .name('uColorMultiplier')
+gui
+  .add(waterMaterial.uniforms.uSmallWavesElevation, 'value')
+  .min(0)
+  .max(1)
+  .step(0.001)
+  .name('uSmallWavesElevation')
+gui
+  .add(waterMaterial.uniforms.uSmallWavesFrequency, 'value')
+  .min(0)
+  .max(30)
+  .step(0.001)
+  .name('uSmallWavesFrequency')
+gui
+  .add(waterMaterial.uniforms.uSmallWavesSpeed, 'value')
+  .min(0)
+  .max(4)
+  .step(0.001)
+  .name('uSmallWavesSpeed')
+gui
+  .add(waterMaterial.uniforms.uSmallIterations, 'value')
+  .min(0)
+  .max(5)
+  .step(1)
+  .name('uSmallIterations')
 
 const rayDirection = new THREE.Vector3(0, -1, 0)
 let rayLength = 0
@@ -186,9 +186,9 @@ const rayParams = {
   minRadius: 0.3,
   maxIterations: 7,
 
-  timeScale: 0.15,
-  propagationTimeFactor: 0.2,
-  vanishingTimeFactor: 0.9,
+  timeScale: 0.05,
+  propagationTimeFactor: 0.3,
+  vanishingTimeFactor: 1.9,
   subrayPeriod: 4,
   subrayDutyCycle: 0.6,
 
@@ -234,7 +234,7 @@ const rayParams = {
     )
   }
 }
-const GROUND_SIZE = 20
+const GROUND_SIZE = 50
 
 // Ground
 
@@ -250,7 +250,7 @@ const storm = new LightningStorm({
   minHeight: 9,
   maxHeight: 20,
   maxSlope: 0.6,
-  maxLightnings: 8,
+  maxLightnings: 2,
   lightningParameters: rayParams,
   lightningMaterial: lightningMaterial
 })
@@ -262,12 +262,6 @@ function createStorm () {
   effectComposer.addPass(new RenderPass(scene, camera))
   createOutline(scene, storm.lightningsMeshes, new THREE.Color(0xb0ffff))
 }
-
-// const waterGeometry = new THREE.PlaneGeometry(20, 20, 512, 512)
-// const plane = new THREE.Mesh(waterGeometry, waterMaterial)
-// plane.rotation.x = -Math.PI * 0.5
-
-//scene.add(plane)
 
 window.addEventListener('resize', () => {
   // Update sizes
@@ -322,7 +316,7 @@ function createOutline (scene, objectsArray, visibleColor) {
 
   return outlinePass
 }
-camera.position.set(0, 1.2, 3.6).multiplyScalar(GROUND_SIZE * 0.5)
+camera.position.set(0, 0.5, 1.9).multiplyScalar(GROUND_SIZE * 0.5)
 
 createStorm()
 
