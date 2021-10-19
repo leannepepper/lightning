@@ -13,6 +13,7 @@ import waterFragmentShader from './shaders/fragment.glsl'
 import { createClouds } from './clouds'
 import cloudVertexShader from './shaders/cloudVertexShader.glsl'
 import cloudFragmentShader from './shaders/cloudFragmentShader.glsl'
+import { InstancedUniformsMesh } from 'three-instanced-uniforms-mesh'
 
 import './style.css'
 
@@ -74,6 +75,19 @@ const uTextureCloudNoise = loader.load('images/2.jpg')
 
 const cloudGeometry = new THREE.PlaneBufferGeometry(10, 10, 5, 5)
 
+const offsets = new Float32Array(2)
+offsets[0] = 10.0
+offsets[1] = 5.0
+
+// for (let i = 0; i < 2; i++) {
+//   offsets[i] = Math.random() * i
+// }
+
+cloudGeometry.setAttribute(
+  'aOffset',
+  new THREE.InstancedBufferAttribute(offsets, 1, false, 1)
+)
+
 const cloudUniforms = {
   uTime: { value: 0 },
   uTextureCloudNoise: { value: uTextureCloudNoise },
@@ -95,15 +109,26 @@ const cloudMaterial = new THREE.ShaderMaterial({
   transparent: true
 })
 
+// Create instances of clouds
+const CLOUD_COUNT = 10
+const testGeom = new THREE.BoxGeometry(1, 1, 1)
+const testMat = new THREE.MeshBasicMaterial({ color: 0xff00ff })
+const matrix = new THREE.Matrix4()
+const position = new THREE.Vector3()
+const dummy = new THREE.Object3D()
+
+//const cloudMesh = new THREE.InstancedMesh(cloudGeometry, cloudMaterial, 2)
+//const cloudMesh = new InstancedUniformsMesh(testGeom, testMat, 10)
+const cloudMesh = new InstancedUniformsMesh(cloudGeometry, cloudMaterial, 2)
+scene.add(cloudMesh)
+
+//dummy.matrix.setPosition(new THREE.Vector3(5, 0, 0))
 for (let i = 0; i < 10; i++) {
-  const cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial)
-
-  cloudMesh.position.x = Math.sin(Math.random() * 10) * Math.random() * 15
-  cloudMesh.position.y = 10
-  cloudMesh.position.z = 10
-
-  scene.add(cloudMesh)
+  //cloudMesh.setMatrixAt(i, dummy.matrix)
+  cloudMesh.setUniformAt('uOffset', i, 10.0)
 }
+
+// cloudMesh.instanceMatrix.needsUpdate = true
 
 // Colors
 debugObject.depthColor = '#11476b'
@@ -247,7 +272,7 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.outputEncoding = THREE.sRGBEncoding
+//renderer.outputEncoding = THREE.sRGBEncoding
 
 /**
  * Post Processing
