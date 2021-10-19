@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-
+import { ShaderMaterial, UniformsUtils, ShaderLib } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
 import { LightningStrike } from 'three/examples/jsm/geometries/LightningStrike.js'
@@ -10,6 +10,9 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass'
 import waterVertexShader from './shaders/vertex.glsl'
 import waterFragmentShader from './shaders/fragment.glsl'
+import { createClouds } from './clouds'
+import cloudVertexShader from './shaders/cloudVertexShader.glsl'
+import cloudFragmentShader from './shaders/cloudFragmentShader.glsl'
 
 import './style.css'
 
@@ -38,16 +41,6 @@ const scene = new THREE.Scene()
 /**
  * Camera
  */
-// Base camera
-// const camera = new THREE.PerspectiveCamera(
-//   75,
-//   sizes.width / sizes.height,
-//   0.1,
-//   100
-// )
-// camera.position.x = 3
-// camera.position.y = 1
-// camera.position.z = 0
 const camera = new THREE.PerspectiveCamera(
   27,
   window.innerWidth / window.innerHeight,
@@ -72,6 +65,45 @@ scene.add(pointLight)
 /**
  * Objects
  */
+
+// Clouds
+const loader = new THREE.TextureLoader()
+
+const uTextureShape = loader.load('images/1.jpg')
+const uTextureCloudNoise = loader.load('images/2.jpg')
+
+const cloudGeometry = new THREE.PlaneBufferGeometry(10, 10, 5, 5)
+
+const cloudUniforms = {
+  uTime: { value: 0 },
+  uTextureCloudNoise: { value: uTextureCloudNoise },
+  uTextureShape: { value: uTextureShape },
+  uFac1: { value: 17.8 },
+  uFac2: { value: 2.7 },
+  uTimeFactor1: { value: 0.002 },
+  uTimeFactor2: { value: 0.0015 },
+  uDisplStrenght1: { value: 0.04 },
+  uDisplStrenght2: { value: 0.08 }
+}
+const cloudMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    ...UniformsUtils.clone(ShaderLib.sprite.uniforms),
+    ...cloudUniforms
+  },
+  vertexShader: cloudVertexShader,
+  fragmentShader: cloudFragmentShader,
+  transparent: true
+})
+
+for (let i = 0; i < 10; i++) {
+  const cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial)
+
+  cloudMesh.position.x = Math.sin(Math.random() * 10) * Math.random() * 15
+  cloudMesh.position.y = 10
+  cloudMesh.position.z = 10
+
+  scene.add(cloudMesh)
+}
 
 // Colors
 debugObject.depthColor = '#11476b'
@@ -100,80 +132,6 @@ const waterMaterial = new THREE.ShaderMaterial({
 const lightningMaterial = new THREE.MeshBasicMaterial({
   color: new THREE.Color(0xb0ffff)
 })
-
-gui
-  .add(waterMaterial.uniforms.uBigWavesElevation, 'value')
-  .min(0)
-  .max(1)
-  .step(0.001)
-  .name('uBigWavesElevation')
-gui
-  .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'x')
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name('uBigWavesFrequencyX')
-gui
-  .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'y')
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name('uBigWavesFrequencyY')
-gui
-  .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'x')
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name('uBigWaveSpeedX')
-gui
-  .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'y')
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name('uBigWaveSpeedY')
-
-gui.addColor(debugObject, 'depthColor').onChange(() => {
-  waterMaterial.uniforms.uDepthColor.value.set(debugObject.depthColor)
-})
-gui.addColor(debugObject, 'surfaceColor').onChange(() => {
-  waterMaterial.uniforms.uSurfaceColor.value.set(debugObject.surfaceColor)
-})
-gui
-  .add(waterMaterial.uniforms.uColorOffset, 'value')
-  .min(0)
-  .max(1)
-  .step(0.001)
-  .name('uColorOffset')
-gui
-  .add(waterMaterial.uniforms.uColorMultiplier, 'value')
-  .min(0)
-  .max(10)
-  .step(0.001)
-  .name('uColorMultiplier')
-gui
-  .add(waterMaterial.uniforms.uSmallWavesElevation, 'value')
-  .min(0)
-  .max(1)
-  .step(0.001)
-  .name('uSmallWavesElevation')
-gui
-  .add(waterMaterial.uniforms.uSmallWavesFrequency, 'value')
-  .min(0)
-  .max(30)
-  .step(0.001)
-  .name('uSmallWavesFrequency')
-gui
-  .add(waterMaterial.uniforms.uSmallWavesSpeed, 'value')
-  .min(0)
-  .max(4)
-  .step(0.001)
-  .name('uSmallWavesSpeed')
-gui
-  .add(waterMaterial.uniforms.uSmallIterations, 'value')
-  .min(0)
-  .max(5)
-  .step(1)
-  .name('uSmallIterations')
 
 const rayDirection = new THREE.Vector3(0, -1, 0)
 let rayLength = 0
@@ -333,12 +291,9 @@ const tick = () => {
   controls.update()
 
   waterMaterial.uniforms.uTime.value = elapsedTime
-  storm.update(elapsedTime)
+  cloudMaterial.uniforms.uTime.value = elapsedTime
 
-  // Animate Lightning
-  if (i % 100 === 0) {
-    // createMainStrike()
-  }
+  storm.update(elapsedTime)
 
   // Render
   //renderer.render(scene, camera)
@@ -350,3 +305,77 @@ const tick = () => {
 }
 
 tick()
+
+// gui
+//   .add(waterMaterial.uniforms.uBigWavesElevation, 'value')
+//   .min(0)
+//   .max(1)
+//   .step(0.001)
+//   .name('uBigWavesElevation')
+// gui
+//   .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'x')
+//   .min(0)
+//   .max(10)
+//   .step(0.001)
+//   .name('uBigWavesFrequencyX')
+// gui
+//   .add(waterMaterial.uniforms.uBigWavesFrequency.value, 'y')
+//   .min(0)
+//   .max(10)
+//   .step(0.001)
+//   .name('uBigWavesFrequencyY')
+// gui
+//   .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'x')
+//   .min(0)
+//   .max(10)
+//   .step(0.001)
+//   .name('uBigWaveSpeedX')
+// gui
+//   .add(waterMaterial.uniforms.uBigWaveSpeed.value, 'y')
+//   .min(0)
+//   .max(10)
+//   .step(0.001)
+//   .name('uBigWaveSpeedY')
+
+// gui.addColor(debugObject, 'depthColor').onChange(() => {
+//   waterMaterial.uniforms.uDepthColor.value.set(debugObject.depthColor)
+// })
+// gui.addColor(debugObject, 'surfaceColor').onChange(() => {
+//   waterMaterial.uniforms.uSurfaceColor.value.set(debugObject.surfaceColor)
+// })
+// gui
+//   .add(waterMaterial.uniforms.uColorOffset, 'value')
+//   .min(0)
+//   .max(1)
+//   .step(0.001)
+//   .name('uColorOffset')
+// gui
+//   .add(waterMaterial.uniforms.uColorMultiplier, 'value')
+//   .min(0)
+//   .max(10)
+//   .step(0.001)
+//   .name('uColorMultiplier')
+// gui
+//   .add(waterMaterial.uniforms.uSmallWavesElevation, 'value')
+//   .min(0)
+//   .max(1)
+//   .step(0.001)
+//   .name('uSmallWavesElevation')
+// gui
+//   .add(waterMaterial.uniforms.uSmallWavesFrequency, 'value')
+//   .min(0)
+//   .max(30)
+//   .step(0.001)
+//   .name('uSmallWavesFrequency')
+// gui
+//   .add(waterMaterial.uniforms.uSmallWavesSpeed, 'value')
+//   .min(0)
+//   .max(4)
+//   .step(0.001)
+//   .name('uSmallWavesSpeed')
+// gui
+//   .add(waterMaterial.uniforms.uSmallIterations, 'value')
+//   .min(0)
+//   .max(5)
+//   .step(1)
+//   .name('uSmallIterations')
