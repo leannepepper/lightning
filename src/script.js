@@ -1,20 +1,16 @@
-import * as THREE from 'three'
-import { ShaderMaterial, UniformsUtils, ShaderLib } from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
-import { LightningStrike } from 'three/examples/jsm/geometries/LightningStrike.js'
-import { LightningStorm } from 'three/examples/jsm/objects/LightningStorm'
 import SimplexNoise from 'simplex-noise'
+import * as THREE from 'three'
+import { ShaderLib, UniformsUtils } from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { LightningStorm } from 'three/examples/jsm/objects/LightningStorm'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass'
-import waterVertexShader from './shaders/vertex.glsl'
-import waterFragmentShader from './shaders/fragment.glsl'
-import { createClouds } from './clouds'
-import cloudVertexShader from './shaders/cloudVertexShader.glsl'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import cloudFragmentShader from './shaders/cloudFragmentShader.glsl'
-import { InstancedUniformsMesh } from 'three-instanced-uniforms-mesh'
-
+import cloudVertexShader from './shaders/cloudVertexShader.glsl'
+import waterFragmentShader from './shaders/fragment.glsl'
+import waterVertexShader from './shaders/vertex.glsl'
 import './style.css'
 
 /**
@@ -23,7 +19,6 @@ import './style.css'
 // Debug
 const gui = new dat.GUI()
 const debugObject = {}
-const noise = new SimplexNoise('seed')
 
 /**
  * Sizes
@@ -74,18 +69,21 @@ const uTextureShape = loader.load('images/1.jpg')
 const uTextureCloudNoise = loader.load('images/2.jpg')
 
 const cloudGeometry = new THREE.PlaneBufferGeometry(10, 10, 5, 5)
+const CLOUD_COUNT = 10
 
-const offsets = new Float32Array(2)
-offsets[0] = 10.0
-offsets[1] = 5.0
+const offsets = new Float32Array(CLOUD_COUNT * 3)
 
-// for (let i = 0; i < 2; i++) {
-//   offsets[i] = Math.random() * i
-// }
+for (let i = 0; i < CLOUD_COUNT; i++) {
+  const i3 = i * 3
+
+  offsets[i3] = getRandomArbitrary(-20, 20)
+  offsets[i3 + 1] = 9.0
+  offsets[i3 + 2] = 0.0
+}
 
 cloudGeometry.setAttribute(
   'aOffset',
-  new THREE.InstancedBufferAttribute(offsets, 1, false, 1)
+  new THREE.InstancedBufferAttribute(offsets, 3, false, 1)
 )
 
 const cloudUniforms = {
@@ -109,45 +107,32 @@ const cloudMaterial = new THREE.ShaderMaterial({
   transparent: true
 })
 
-// Create instances of clouds
-const CLOUD_COUNT = 10
-const testGeom = new THREE.BoxGeometry(1, 1, 1)
-const testMat = new THREE.MeshBasicMaterial({ color: 0xff00ff })
-const matrix = new THREE.Matrix4()
-const position = new THREE.Vector3()
-const dummy = new THREE.Object3D()
+const cloudMesh = new THREE.InstancedMesh(
+  cloudGeometry,
+  cloudMaterial,
+  CLOUD_COUNT
+)
 
-//const cloudMesh = new THREE.InstancedMesh(cloudGeometry, cloudMaterial, 2)
-//const cloudMesh = new InstancedUniformsMesh(testGeom, testMat, 10)
-const cloudMesh = new InstancedUniformsMesh(cloudGeometry, cloudMaterial, 2)
 scene.add(cloudMesh)
 
-//dummy.matrix.setPosition(new THREE.Vector3(5, 0, 0))
-for (let i = 0; i < 10; i++) {
-  //cloudMesh.setMatrixAt(i, dummy.matrix)
-  cloudMesh.setUniformAt('uOffset', i, 10.0)
-}
-
-// cloudMesh.instanceMatrix.needsUpdate = true
-
 // Colors
-debugObject.depthColor = '#11476b'
-debugObject.surfaceColor = '#9bd8ff'
+debugObject.depthColor = '#263d4d'
+debugObject.surfaceColor = '#99c7e8'
 
 // Materials
 const waterMaterial = new THREE.ShaderMaterial({
   vertexShader: waterVertexShader,
   fragmentShader: waterFragmentShader,
   uniforms: {
-    uBigWavesElevation: { value: 0.128 },
-    uBigWavesFrequency: { value: new THREE.Vector2(1.389, 0.413) },
+    uBigWavesElevation: { value: 0.106 },
+    uBigWavesFrequency: { value: new THREE.Vector2(0.63, 0.413) },
     uTime: { value: 0 },
-    uBigWaveSpeed: { value: new THREE.Vector2(0.75, 0.5) },
+    uBigWaveSpeed: { value: new THREE.Vector2(0.196, 0.5) },
     uDepthColor: { value: new THREE.Color(debugObject.depthColor) },
     uSurfaceColor: { value: new THREE.Color(debugObject.surfaceColor) },
-    uColorOffset: { value: 0.22 },
-    uColorMultiplier: { value: 2.256 },
-    uSmallWavesElevation: { value: 0.507 },
+    uColorOffset: { value: 0.356 },
+    uColorMultiplier: { value: 1.714 },
+    uSmallWavesElevation: { value: 0.707 },
     uSmallWavesFrequency: { value: 0.264 },
     uSmallWavesSpeed: { value: 0.2 },
     uSmallIterations: { value: 4 }
@@ -158,7 +143,7 @@ const lightningMaterial = new THREE.MeshBasicMaterial({
   color: new THREE.Color(0xb0ffff)
 })
 
-const rayDirection = new THREE.Vector3(0, -1, 0)
+const rayDirection = new THREE.Vector3(0, -1, -1)
 let rayLength = 0
 const vec1 = new THREE.Vector3()
 const vec2 = new THREE.Vector3()
@@ -181,8 +166,8 @@ const rayParams = {
 
   roughness: 0.85,
   straightness: 0.65,
-  sourceOffset: new THREE.Vector3(0, 2, 0),
-  destOffset: new THREE.Vector3(-1, 2, 0),
+  sourceOffset: new THREE.Vector3(0, 2, -1),
+  destOffset: new THREE.Vector3(-1, 2, -1),
   onSubrayCreation: function (
     segment,
     parentSubray,
@@ -299,7 +284,7 @@ function createOutline (scene, objectsArray, visibleColor) {
 
   return outlinePass
 }
-camera.position.set(0, 0.5, 1.9).multiplyScalar(GROUND_SIZE * 0.5)
+camera.position.set(0, 0.5, 1.5).multiplyScalar(GROUND_SIZE * 0.5)
 
 createStorm()
 
@@ -330,6 +315,17 @@ const tick = () => {
 }
 
 tick()
+
+/*
+ ** Utils
+ */
+function getRandomArbitrary (min, max) {
+  return Math.random() * (max - min) + min
+}
+
+/*
+ ** DEBUG
+ */
 
 // gui
 //   .add(waterMaterial.uniforms.uBigWavesElevation, 'value')
